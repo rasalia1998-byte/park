@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Национальные парки и заповедники Беларуси</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Georgia', sans-serif;
+            background: #2a5f3a;
+            overflow-x: auto;
+            min-height: 100vh;
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            background-image: url('https://drive.google.com/thumbnail?id=1si4NR6yINGM-c3AC4DBVuUTM6BVT7ogH&sz=w1920');  /* ПУТЬ К ФАЙЛУ КАРТЫ */
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.05);
+        }
+
+        .banners-layer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+        }
+
+        /* Баннеры */
+        .park-banner {
+            position: absolute;
+            width: 220px;
+            background: rgba(255, 248, 225, 0.96);
+            backdrop-filter: blur(2px);
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            border: 1px solid #ffd966;
+        }
+
+        .park-banner:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .banner-img {
+            width: 100%;
+            height: 130px;
+            background-color: #bc9a6c;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .banner-img span {
+            background: rgba(0,0,0,0.6);
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 11px;
+            color: white;
+        }
+
+        .banner-content {
+            padding: 10px 12px 14px;
+        }
+
+        .banner-title {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #2c5a2e;
+            border-left: 3px solid #e6a017;
+            padding-left: 8px;
+            margin-bottom: 6px;
+        }
+
+        .banner-location {
+            font-size: 0.7rem;
+            color: #4a6a3b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .banner-location::before {
+            content: "📍";
+            font-size: 0.75rem;
+        }
+
+        /* Панель музыки */
+        .music-panel {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            display: flex;
+            gap: 15px;
+            background: rgba(30, 40, 20, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 10px 18px;
+            border-radius: 60px;
+            border: 1px solid #ffdf8c;
+            z-index: 200;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+        }
+
+        /* Кнопка викторины */
+        .quiz-button-wrapper {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 200;
+        }
+
+        .quiz-main-btn {
+            background: #f3c26b;
+            border: none;
+            font-size: 1.1rem;
+            padding: 10px 22px;
+            border-radius: 60px;
+            font-weight: bold;
+            color: #2d4527;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .quiz-main-btn:hover {
+            background: #ffb347;
+            transform: scale(1.02);
+            color: white;
+        }
+
+        .ctrl-btn {
+            background: #f3c26b;
+            border: none;
+            font-size: 0.9rem;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-weight: bold;
+            color: #2d4527;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ctrl-btn:hover {
+            background: #ffb347;
+            transform: scale(1.02);
+            color: white;
+        }
+
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #fff9ef;
+            max-width: 550px;
+            width: 85%;
+            border-radius: 32px;
+            padding: 20px 24px 28px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.4);
+            border-left: 12px solid #e6a017;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .modal-content h3 {
+            font-size: 1.7rem;
+            color: #2c5a2e;
+            margin-bottom: 12px;
+        }
+
+        .modal-img {
+            width: 100%;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 20px;
+            margin: 12px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .wildlife-section {
+            background: #eaf5e3;
+            padding: 10px 14px;
+            border-radius: 24px;
+            margin: 12px 0;
+            border-left: 4px solid #e6a017;
+        }
+
+        .close-modal {
+            background: #e6a017;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: bold;
+            margin-top: 12px;
+            cursor: pointer;
+            float: right;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Викторина */
+        .quiz-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .quiz-card {
+            background: #fef7e0;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 48px;
+            padding: 20px 25px 30px;
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .quiz-question {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 15px 0;
+            color: #2b5e2f;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .quiz-option {
+            background: #e7e3d4;
+            padding: 10px 14px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .quiz-option.selected {
+            background: #ffdd99;
+            border: 1px solid #c97e0a;
+            box-shadow: 0 0 0 2px #ffb347;
+        }
+
+        .quiz-option:hover {
+            background: #f4e5c7;
+        }
+
+        .quiz-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .quiz-btn {
+            background: #e6a017;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .quiz-result {
+            font-size: 1.2rem;
+            margin: 20px 0;
+            background: #e2f0da;
+            padding: 15px;
+            border-radius: 30px;
+        }
+
+        .prize-text {
+            font-size: 1.1rem;
+            color: #b45f06;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+
+        .progress {
+            font-size: 0.85rem;
+            background: #cfd8c0;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 40px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .park-banner {
+                width: 180px;
+            }
+            .banner-img {
+                height: 110px;
+            }
+            .quiz-question {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="map-container" id="mapContainer">
+    <div class="banners-layer" id="bannersLayer"></div>
+</div>
+
+<!-- Музыкальная панель -->
+<div class="music-panel">
+    <button class="ctrl-btn" id="musicPlayBtn">🎵 Вкл</button>
+    <button class="ctrl-btn" id="musicPauseBtn">⏸ Пауза</button>
+</div>
+
+<!-- Кнопка викторины -->
+<div class="quiz-button-wrapper">
+    <button class="quiz-main-btn" id="quizOpenBtn">🧠 Викторина</button>
+</div>
+
+<!-- Модальное окно -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle"></h3>
+        <div id="modalDetails"></div>
+        <button class="close-modal" id="closeModalBtn">Закрыть</button>
+    </div>
+</div>
+
+<!-- Окно викторины -->
+<div id="quizModal" class="quiz-overlay">
+    <div class="quiz-card">
+        <div id="quizArea">
+            <div class="progress" id="quizProgress"></div>
+            <div id="questionText" class="quiz-question"></div>
+            <div id="optionsContainer" class="quiz-options"></div>
+            <div class="quiz-nav">
+                <button id="prevQuestionBtn" class="quiz-btn" style="background:#b0aa8c;">◀ Назад</button>
+                <button id="nextQuestionBtn" class="quiz-btn">Далее ▶</button>
+            </div>
+            <div id="quizResultArea" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== ДАННЫЕ О ПАРКАХ ==========
+    const parksData = [
+        {
+            id: 1,
+            name: "Беловежская пуща",
+            location: "Брестская область, Каменецкий и Пружанский р-ны",
+            area: "152 000 га",
+            facts: "Объект Всемирного наследия ЮНЕСКО, крупнейший лесной массив равнинной Европы. Возраст некоторых дубов превышает 500 лет.",
+            wildlife: "&#128002 Зубр (самая большая популяция в мире), благородный олень, косуля, кабан, рысь, волк, чёрный аист, филин, дуб, граб, ясень.",
+            bannerImg: "https://drive.google.com/thumbnail?id=16WxkiLhVHXc-QeidmDOCUPRjRkgXv2Z2&sz=w1920",
+            modalImg: "https://drive.google.com/thumbnail?id=1HgH2KH5JRVwYT-eLdQ39vzaIJzAMXNLX&sz=w1920",
+            defaultPos: { top: "69%", left: "4%" }
+        },
+        {
+            id: 2,
+            name: "Березинский биосферный заповедник",
+            location: "Витебская и Минская области, Лепельский, Докшицкий р-ны",
+            area: "85 200 га",
+            facts: "Один из старейших заповедников Беларуси (1925 г.), биосферный резерват ЮНЕСКО. Богат глухими болотами и первозданными лесами.",
+            wildlife: "🐻 Бурый медведь (восстановленная популяция), рысь, барсук, глухарь, беркут, скопа, чёрный аист, болотная черепаха, клюква, росянка.",
+            bannerImg: "https://drive.google.com/thumbnail?id=1zB6uU1w0kJwyUHRdXUmCKsHzGn00_nua&sz=w1920",
+            modalImg: "https://drive.google.com/thumbnail?id=1G5HWDateOH2ACQl8K8L9K9Y3hkBjqLqM&sz=w1920",
+            defaultPos: { top: "3%", left: "75%" }
+        },
+        {
+            id: 3,
+            name: "Национальный парк «Браславские озёра»",
+            location: "Витебская область, Браславский район",
+            area: "69 100 га",
+            facts: "Около 300 озёр, уникальные ландшафты, ледниковые гряды. Популярен экотуризм, более 30 видов рыб.",
+            wildlife: "🐟 Сом, угорь, сиг, щука, лещ, ондатра, бобр, лебедь-шипун, серебристая чайка, скопа, водяная ночница.",
+            bannerImg: "https://drive.google.com/thumbnail?id=1KA6c1WKpkFlm_mQkEEErccG5L4FX1C3N&sz=w1920",
+            modalImg: "https://drive.google.com/thumbnail?id=1J0nBQuDFDIg6BXtJR-MYMAYMnVI968n8&sz=w1920",
+            defaultPos: { top: "9%", left: "7%" }
+        },
+        {
+            id: 4,
+            name: "Национальный парк «Припятский»",
+            location: "Гомельская область, Житковичский, Петриковский р-ны",
+            area: "88 500 га",
+            facts: "Пойменные дубравы, заливные луга, крупнейший массив низинных болот Европы. Туры на лодках и орнитологические экскурсии.",
+            wildlife: "🦆 Серый журавль, чёрный аист, большая выпь, орлан-белохвост; лось, кабан, европейская норка, сом, щука, дуб, ива, осока.",
+            bannerImg: "https://drive.google.com/thumbnail?id=1y4Y-4vg0i-kOvP0uZKk66Luw47km9ljs&sz=w1920",
+            modalImg: "https://drive.google.com/thumbnail?id=1YwvRQMT-MIzGFZeY0ZShYTKG9HwvfDp_&sz=w1920",
+            defaultPos: { top: "33%", left: "80%" }
+        },
+        {
+            id: 5,
+            name: "Национальный парк «Нарочанский»",
+            location: "Минская область, Мядельский, Вилейский, Поставский р-ны",
+            area: "97 300 га",
+            facts: "Самое большое озеро Беларуси — Нарочь, курортная зона, леса с высоким биоразнообразием. Более 40 видов млекопитающих.",
+            wildlife: "🦢 Лебедь-шипун, серая цапля, чомга, бобр, выдра, норка, лось, косуля, судак, щука, угорь, сосна, ель, берёза.",
+            bannerImg: "https://drive.google.com/thumbnail?id=13S8aNhrvBoGbYM0wwqoZJteZBl3E4JRo&sz=w1920",
+            modalImg: "https://drive.google.com/thumbnail?id=1WbXhX8opmanMmPi6IVQRimBuHFz686bg&sz=w1920",
+            defaultPos: { top: "39%", left: "3%" }
+        },
+        {
+            id: 6,
+            name: "Полесский радиационно-экологический заповедник",
+            location: "Гомельская область (Брагинский, Наровлянский, Хойникский р-ны)",
+            area: "216 000 га",
+            facts: "Создан после аварии на ЧАЭС для радиоэкологических исследований. Природа восстанавливается без вмешательства человека.",
+            wildlife: "🐺 Волк, рысь, лось, кабан, европейский зубр, чёрный аист, орлан-белохвост, беркут, редкие орхидные.",
+            bannerImg: "https://drive.google.com/thumbnail?id=18CsH5ZV5ZPdk40BEgkhZt4FfYeorhkW9&sz=w1920",
+            modalImg: "https://drive.google.com/thumbnail?id=14ie-cv-Iifs9EdSEjggXdSTwfvT_Uzhc&sz=w1920",
+            defaultPos: { top: "60%", left: "74%" }
+        }
+    ];
+
+    // Генерация баннеров 
+    function generateBanners() {
+        const container = document.getElementById('bannersLayer');
+        container.innerHTML = '';
+        parksData.forEach(park => {
+            const banner = document.createElement('div');
+            banner.className = 'park-banner';
+            banner.style.top = park.defaultPos.top;
+            banner.style.left = park.defaultPos.left;
+            banner.setAttribute('data-id', park.id);
+
+            const imgDiv = document.createElement('div');
+            imgDiv.className = 'banner-img';
+            imgDiv.style.backgroundImage = `url('${park.bannerImg}')`;
+            imgDiv.onerror = function() {
+                this.style.backgroundImage = 'none';
+                this.innerHTML = '<span>🖼️ нет фото</span>';
+            };
+            imgDiv.innerHTML = '';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'banner-content';
+            contentDiv.innerHTML = `
+                <div class="banner-title">${park.name}</div>
+                <div class="banner-location">${park.location.split(',')[0]}</div>
+            `;
+
+            banner.appendChild(imgDiv);
+            banner.appendChild(contentDiv);
+            container.appendChild(banner);
+        });
+
+        // Открытие модалки по клику на баннер
+        document.querySelectorAll('.park-banner').forEach(banner => {
+            banner.addEventListener('click', () => {
+                const id = parseInt(banner.getAttribute('data-id'));
+                const park = parksData.find(p => p.id === id);
+                if (park) showDetailsModal(park);
+            });
+        });
+    }
+
+    function showDetailsModal(park) {
+        const modal = document.getElementById('infoModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDetails = document.getElementById('modalDetails');
+        modalTitle.innerText = park.name;
+        
+        let modalImgHtml = '';
+        if (park.modalImg) {
+            modalImgHtml = `<img class="modal-img" src="${park.modalImg}" alt="${park.name}" onerror="this.onerror=null; this.style.display='none'; this.nextSibling.style.display='block';"><div style="display:none; text-align:center; padding:8px;">🖼️ Фото не загружено</div>`;
+        } else {
+            modalImgHtml = '<div style="text-align:center; padding:8px;">🖼️ Изображение не задано</div>';
+        }
+        
+        modalDetails.innerHTML = `
+            ${modalImgHtml}
+            <p><strong>📍 Местонахождение:</strong> ${park.location}</p>
+            <p><strong>📐 Площадь:</strong> ${park.area}</p>
+            <p><strong>🌿 Интересные факты:</strong> ${park.facts}</p>
+            <div class="wildlife-section">
+                <strong>🐾 Основные обитатели:</strong><br>
+                ${park.wildlife}
+            </div>
+        `;
+        const modalImgElement = modalDetails.querySelector('.modal-img');
+        if (modalImgElement) {
+            modalImgElement.onerror = function() {
+                this.style.display = 'none';
+                const fallback = this.nextElementSibling;
+                if (fallback) fallback.style.display = 'block';
+            };
+        }
+        modal.style.display = 'flex';
+    }
+
+    // ========== МУЗЫКА ==========
+    let audioPlayer = null;
+    function initMusic() {
+        audioPlayer = new Audio('https://worldofchildren.ru/images/stories/audio/birds/17.solovey.mp3');
+        audioPlayer.loop = true;
+        audioPlayer.volume = 0.6;
+        audioPlayer.play().catch(e => console.log("Автовоспроизведение заблокировано."));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initMusic();
+        document.getElementById('musicPlayBtn').addEventListener('click', () => audioPlayer?.play().catch(e=>{}));
+        document.getElementById('musicPauseBtn').addEventListener('click', () => audioPlayer?.pause());
+    });
+
+    // ========== ВИКТОРИНА С ПРИЗАМИ ==========
+    const quizQuestions = [
+        { text: "Какой национальный парк Беларуси является объектом Всемирного наследия ЮНЕСКО?", options: ["Нарочанский", "Беловежская пуща", "Припятский", "Браславские озёра"], correct: 1 },
+        { text: "В каком заповеднике находится крупнейшая популяция зубров?", options: ["Березинский", "Полесский РЭЗ", "Беловежская пуща", "Нарочанский"], correct: 2 },
+        { text: "Какова площадь Березинского биосферного заповедника (тыс. га)?", options: ["~55", "~85", "~110", "~150"], correct: 1 },
+        { text: "Самое большое озеро Беларуси (Нарочь) находится в каком национальном парке?", options: ["Припятский", "Браславские озёра", "Нарочанский", "Беловежская пуща"], correct: 2 },
+        { text: "Какой заповедник был создан после аварии на Чернобыльской АЭС?", options: ["Березинский", "Полесский радиационно-экологический", "Припятский", "Нарочанский"], correct: 1 },
+        { text: "Сколько озёр насчитывается в национальном парке «Браславские озёра»?", options: ["Около 100", "Около 200", "Около 300", "Около 400"], correct: 2 },
+        { text: "Какой из парков славится пойменными дубравами и болотными массивами?", options: ["Беловежская пуща", "Припятский", "Нарочанский", "Браславские озёра"], correct: 1 },
+        { text: "В каком районе Минской области находится Национальный парк «Нарочанский»? (основная часть)", options: ["Мядельский", "Вилейский", "Поставский", "Логойский"], correct: 0 },
+        { text: "Какой статус имеет Березинский заповедник помимо национального значения?", options: ["Рамсарское угодье", "Биосферный резерват ЮНЕСКО", "Кандидат ЮНЕСКО", "Заказник республиканского значения"], correct: 1 },
+        { text: "Где находится Национальный парк «Припятский»?", options: ["Брестская область", "Гомельская область", "Могилёвская область", "Минская область"], correct: 1 }
+    ];
+
+    let currentQuizIndex = 0;
+    let userAnswers = new Array(quizQuestions.length).fill(null);
+    let quizActive = false;
+
+    const quizModalDiv = document.getElementById('quizModal');
+    const quizProgressSpan = document.getElementById('quizProgress');
+    const questionTextDiv = document.getElementById('questionText');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const prevBtn = document.getElementById('prevQuestionBtn');
+    const nextBtn = document.getElementById('nextQuestionBtn');
+    const quizResultArea = document.getElementById('quizResultArea');
+
+    function renderQuestion() {
+        if (!quizActive) return;
+        const q = quizQuestions[currentQuizIndex];
+        questionTextDiv.innerText = `${currentQuizIndex+1}. ${q.text}`;
+        optionsContainer.innerHTML = '';
+        q.options.forEach((opt, idx) => {
+            const optDiv = document.createElement('div');
+            optDiv.className = 'quiz-option';
+            if (userAnswers[currentQuizIndex] === idx) optDiv.classList.add('selected');
+            optDiv.innerText = opt;
+            optDiv.addEventListener('click', () => {
+                userAnswers[currentQuizIndex] = idx;
+                document.querySelectorAll('.quiz-option').forEach(el => el.classList.remove('selected'));
+                optDiv.classList.add('selected');
+            });
+            optionsContainer.appendChild(optDiv);
+        });
+        quizProgressSpan.innerText = `Вопрос ${currentQuizIndex+1} из ${quizQuestions.length}`;
+        prevBtn.disabled = (currentQuizIndex === 0);
+        nextBtn.innerText = (currentQuizIndex === quizQuestions.length - 1) ? 'Завершить' : 'Далее ▶';
+    }
+
+    function showFinalResult() {
+        let correctCount = 0;
+        for (let i = 0; i < quizQuestions.length; i++) {
+            if (userAnswers[i] === quizQuestions[i].correct) correctCount++;
+        }
+        const percent = Math.round((correctCount / quizQuestions.length) * 100);
+        
+        let prizeText = "";
+        if (correctCount === 10) {
+            prizeText = "🏆 ГРАН-ПРИ: Вы – лесной гуру! Зубры вам рукоплещут, а соловьи поют оду. 🏆";
+        } else if (correctCount >= 8) {
+            prizeText = "🥈 ВТОРОЕ МЕСТО: Вы почти шаман белорусских лесов! 🥈";
+        } else if (correctCount >= 6) {
+            prizeText = "🍃 ТРЕТЬЕ МЕСТО: Хороший результат, но зубры шепчут: «Подтяни ботанику!» 🍃";
+        } else if (correctCount >= 4) {
+            prizeText = "🌿 УТЕШИТЕЛЬНЫЙ ПРИЗ: Вы явно путаете пущу с пустыней, но старание похвально! 🌿";
+        } else {
+            prizeText = "🍄 БОНИФИКАЦИЯ: Кажется, вы заблудились в трёх соснах… 🍄";
+        }
+
+        quizResultArea.style.display = 'block';
+        quizResultArea.innerHTML = `
+            <div class="quiz-result">
+                🌟 Ваш результат: ${correctCount} из ${quizQuestions.length} (${percent}%) 🌟
+                <div class="prize-text">${prizeText}</div>
+                <button id="closeQuizResultBtn" class="quiz-btn" style="margin-top: 20px; background:#b8860b; display: inline-block;">Закрыть</button>
+            </div>
+        `;
+        document.getElementById('closeQuizResultBtn').addEventListener('click', () => {
+            quizModalDiv.style.display = 'none';
+            quizResultArea.style.display = 'none';
+            resetQuiz();
+        });
+        document.querySelector('#quizArea .quiz-question').style.display = 'none';
+        document.querySelector('#quizArea .quiz-options').style.display = 'none';
+        document.querySelector('#quizArea .quiz-nav').style.display = 'none';
+        document.getElementById('quizProgress').style.display = 'none';
+    }
+
+    function resetQuiz() {
+        currentQuizIndex = 0;
+        userAnswers.fill(null);
+        quizActive = true;
+        document.querySelector('#quizArea .quiz-question').style.display = 'block';
+        document.querySelector('#quizArea .quiz-options').style.display = 'flex';
+        document.querySelector('#quizArea .quiz-nav').style.display = 'flex';
+        document.getElementById('quizProgress').style.display = 'inline-block';
+        quizResultArea.style.display = 'none';
+        renderQuestion();
+    }
+
+    function nextQuestion() {
+        if (!quizActive) return;
+        if (currentQuizIndex < quizQuestions.length - 1) {
+            currentQuizIndex++;
+            renderQuestion();
+        } else {
+            showFinalResult();
+        }
+    }
+
+    function prevQuestion() {
+        if (currentQuizIndex > 0) {
+            currentQuizIndex--;
+            renderQuestion();
+        }
+    }
+
+    document.getElementById('quizOpenBtn').addEventListener('click', () => {
+        resetQuiz();
+        quizModalDiv.style.display = 'flex';
+        quizActive = true;
+    });
+    quizModalDiv.addEventListener('click', (e) => {
+        if (e.target === quizModalDiv) {
+            quizModalDiv.style.display = 'none';
+            resetQuiz();
+        }
+    });
+    prevBtn.addEventListener('click', prevQuestion);
+    nextBtn.addEventListener('click', nextQuestion);
+
+    const modalInfo = document.getElementById('infoModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    closeModalBtn.addEventListener('click', () => modalInfo.style.display = 'none');
+    modalInfo.addEventListener('click', (e) => { if (e.target === modalInfo) modalInfo.style.display = 'none'; });
+
+    window.addEventListener('load', generateBanners);
+    document.body.addEventListener('click', function initOnce() {
+        if (audioPlayer && audioPlayer.paused) audioPlayer.play().catch(e=>{});
+    }, { once: true });
+</script>
+</body>
+</html>
